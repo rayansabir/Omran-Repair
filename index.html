@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omran Phone | Pro Repair Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts for English, Arabic, and Kurdish -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563eb',
+                        dark: '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tab-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Timeline styling */
+        .timeline-item { position: relative; padding-bottom: 1.5rem; }
+        .timeline-item:not(:last-child):before {
+            content: ''; position: absolute; left: 15px; top: 30px; bottom: 0; width: 2px; background-color: #e2e8f0;
+        }
+        html[dir="rtl"] .timeline-item:not(:last-child):before { left: auto; right: 15px; }
+    </style>
+</head>
+<body class="font-sans bg-gray-50 text-gray-800 min-h-screen flex flex-col transition-all duration-300">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.reload()">
+                    <div class="bg-primary text-white p-1.5 rounded-lg shadow-md">
+                        <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    </div>
+                    <span class="font-bold text-xl text-dark" data-i18n="brand">Omran<span class="text-primary">Repair</span></span>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-6">
+                    <!-- Language Switcher -->
+                    <select id="lang-switcher" onchange="changeLanguage(this.value)" class="bg-gray-100 border-none text-sm font-medium rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                        <option value="en">English (US)</option>
+                        <option value="ar">العربية (Iraqi)</option>
+                        <option value="ku">کوردى (Badini)</option>
+                    </select>
+
+                    <!-- Tab Navigation -->
+                    <div class="flex space-x-1 sm:space-x-4 rtl:space-x-reverse">
+                        <button onclick="switchTab('customer')" id="tab-customer" class="tab-active px-2 py-4 text-sm sm:text-base text-gray-500 hover:text-primary transition-colors font-medium" data-i18n="tab_track">
+                            Track Device
+                        </button>
+                        <button onclick="switchTab('admin')" id="tab-admin" class="px-2 py-4 text-sm sm:text-base text-gray-500 hover:text-primary transition-colors font-medium flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-4 h-4 hidden sm:block"></i> <span data-i18n="tab_staff">Staff Dashboard</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+
+        <!-- ========================================== -->
+        <!-- CUSTOMER TRACKER VIEW -->
+        <!-- ========================================== -->
+        <div id="view-customer" class="fade-in max-w-3xl mx-auto mt-6 sm:mt-12">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-dark mb-3" data-i18n="check_status_title">Check Repair Status</h1>
+                <p class="text-gray-500" data-i18n="check_status_desc">Enter your Ticket ID to view full details and the timeline of your device.</p>
+            </div>
+
+            <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+                <form id="search-form" class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="search-ticket" required placeholder="A1B2C3" 
+                           class="flex-grow px-5 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none text-lg font-bold uppercase tracking-widest text-center sm:text-start bg-gray-50 focus:bg-white transition-all dir-ltr" style="direction: ltr;">
+                    <button type="submit" class="bg-primary hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30">
+                        <i data-lucide="search" class="w-5 h-5"></i> <span data-i18n="btn_track">Track</span>
+                    </button>
+                </form>
+
+                <!-- Search Result Container -->
+                <div id="search-result" class="mt-8 hidden">
+                    <!-- Result gets injected here -->
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- ADMIN DASHBOARD VIEW (STAFF ONLY) -->
+        <!-- ========================================== -->
+        <div id="view-admin" class="hidden fade-in">
+            <div class="flex flex-col lg:flex-row gap-6">
+                
+                <!-- Left Column: Add New Repair Form -->
+                <div class="w-full lg:w-5/12">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden sticky top-20">
+                        <div class="bg-dark p-4 border-b border-gray-800">
+                            <h2 class="text-white font-bold flex items-center gap-2 text-lg">
+                                <i data-lucide="file-plus" class="w-5 h-5 text-primary"></i> <span data-i18n="new_repair_title">New Repair Job</span>
+                            </h2>
+                        </div>
+                        <div class="p-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                            <form id="add-repair-form" class="space-y-5">
+                                
+                                <!-- Customer Info -->
+                                <div class="space-y-4">
+                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-1" data-i18n="sec_customer">Customer Info</h3>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_name">Full Name *</label>
+                                        <input type="text" id="inp-name" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_phone">Phone Number *</label>
+                                            <input type="tel" id="inp-phone" required placeholder="07..." class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm" style="direction: ltr;">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_address">Address</label>
+                                            <input type="text" id="inp-address" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Device Info -->
+                                <div class="space-y-4 pt-2">
+                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-1" data-i18n="sec_device">Device Details</h3>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_mobile">Mobile Name *</label>
+                                            <input type="text" id="inp-device" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_color">Color *</label>
+                                            <input type="text" id="inp-color" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_items">Included with Phone</label>
+                                        <input type="text" id="inp-items" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                        <p class="text-[11px] text-gray-500 mt-1" data-i18n="lbl_items_desc">Cover, SIM card, Memory Card, etc.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Repair & Cost -->
+                                <div class="space-y-4 pt-2">
+                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-1" data-i18n="sec_cost">Repair & Cost</h3>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_type">Repair Category *</label>
+                                        <select id="inp-type" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm">
+                                            <option value="Hardware" data-i18n="opt_hw">Hardware</option>
+                                            <option value="Software" data-i18n="opt_sw">Software</option>
+                                            <option value="Both" data-i18n="opt_both">Hardware & Software</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 space-y-3">
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div class="col-span-2">
+                                                <label class="block text-sm font-medium text-blue-900 mb-1" data-i18n="lbl_amount">Cost Amount</label>
+                                                <input type="number" id="inp-cost" min="0" placeholder="0" class="w-full px-4 py-2 rounded-md border border-blue-200 focus:ring-2 focus:ring-primary outline-none text-sm font-bold text-blue-900" style="direction: ltr;">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-blue-900 mb-1" data-i18n="lbl_curr">Currency</label>
+                                                <select id="inp-currency" class="w-full px-2 py-2 rounded-md border border-blue-200 focus:ring-2 focus:ring-primary outline-none text-sm font-bold bg-white text-blue-900">
+                                                    <option value="IQD">IQD (د.ع)</option>
+                                                    <option value="USD">USD ($)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-blue-900 mb-1" data-i18n="lbl_cost_desc">What is this cost for?</label>
+                                            <input type="text" id="inp-cost-details" class="w-full px-4 py-2 rounded-md border border-blue-200 focus:ring-2 focus:ring-primary outline-none text-sm bg-white">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="lbl_notes">Final Details / Notes</label>
+                                        <textarea id="inp-notes" rows="2" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary outline-none bg-gray-50 focus:bg-white text-sm resize-none"></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="w-full bg-dark hover:bg-black text-white py-4 rounded-xl font-bold transition-all flex justify-center items-center gap-2 mt-4 shadow-lg">
+                                    <i data-lucide="check-square" class="w-5 h-5"></i> <span data-i18n="btn_create">Create Ticket</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Active Repairs List -->
+                <div class="w-full lg:w-7/12">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 class="font-bold text-dark text-lg" data-i18n="list_title">Active Jobs</h2>
+                            <span id="total-jobs" class="bg-blue-100 text-primary text-xs font-bold px-3 py-1.5 rounded-full" style="direction: ltr;">0</span>
+                        </div>
+                        
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-start border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-white border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
+                                        <th class="px-5 py-4 font-bold text-start" data-i18n="th_ticket">Ticket</th>
+                                        <th class="px-5 py-4 font-bold text-start" data-i18n="th_customer">Customer</th>
+                                        <th class="px-5 py-4 font-bold text-start" data-i18n="th_device">Device & Cost</th>
+                                        <th class="px-5 py-4 font-bold text-start" data-i18n="th_status">Status (Auto WhatsApp)</th>
+                                        <th class="px-5 py-4 font-bold text-end" data-i18n="th_action">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-repair-list" class="divide-y divide-gray-100">
+                                    <!-- Rows injected by JS -->
+                                </tbody>
+                            </table>
+                            
+                            <!-- Empty State -->
+                            <div id="empty-state" class="p-16 text-center text-gray-500 hidden">
+                                <i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                <h3 class="text-lg font-bold text-gray-800 mb-1" data-i18n="empty_title">No repair jobs yet</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 rtl:right-auto rtl:left-4 bg-dark text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all transform translate-y-20 opacity-0 z-50 border border-gray-700">
+        <i data-lucide="info" class="w-5 h-5 text-primary"></i>
+        <span id="toast-msg" class="font-medium text-sm">Action completed</span>
+    </div>
+
+    <!-- I18N & Logic Script -->
+    <script>
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
+        // IMPORTANT: Once you publish to GitHub Pages, change this URL to your actual link.
+        // Keep the "?ticket=" at the end.
+        const WEBSITE_URL = window.location.origin + window.location.pathname + "?ticket="; 
+        
+        // --- TRANSLATION DICTIONARY ---
+        const translations = {
+            en: {
+                brand: "Omran<span class='text-primary'>Repair</span>",
+                tab_track: "Track Device", tab_staff: "Staff Dashboard",
+                check_status_title: "Check Repair Status", check_status_desc: "Enter your Ticket ID to view full details and the timeline of your device.",
+                btn_track: "Track", new_repair_title: "New Repair Job",
+                sec_customer: "Customer Info", lbl_name: "Full Name *", lbl_phone: "Phone Number *", lbl_address: "Address",
+                sec_device: "Device Details", lbl_mobile: "Mobile Name *", lbl_color: "Color *", lbl_items: "Included with Phone", lbl_items_desc: "Cover, SIM card, Memory Card, etc.",
+                sec_cost: "Repair & Cost", lbl_type: "Repair Category *", opt_hw: "Hardware", opt_sw: "Software", opt_both: "Hardware & Software",
+                lbl_amount: "Cost Amount", lbl_curr: "Currency", lbl_cost_desc: "What is this cost for?", lbl_notes: "Final Details / Notes",
+                btn_create: "Create Ticket", list_title: "Active Jobs",
+                th_ticket: "Ticket", th_customer: "Customer", th_device: "Device & Cost", th_status: "Update Status", th_action: "Action",
+                empty_title: "No repair jobs yet",
+                
+                // Statuses
+                s_create: "Create ticket", s_check: "Checking", s_price: "Price checking", s_prog: "In Progress", s_fin: "Finished", s_rec: "Received",
+                
+                // WhatsApp MSG (Now includes link)
+                wa_msg: "Hello {name}, the status of your device ({device}) is now: *{status}*.\n\nClick the link below to check your full receipt and timeline:\n{link}",
+                
+                // UI details
+                lbl_timeline: "Repair Timeline", lbl_invoice: "Repair Invoice", lbl_total: "Total Cost", lbl_for: "For Service:", not_found: "Ticket Not Found"
+            },
+            ar: {
+                brand: "عمران <span class='text-primary'>للتصليح</span>",
+                tab_track: "تتبع الجهاز", tab_staff: "لوحة الموظفين",
+                check_status_title: "تحقق من حالة التصليح", check_status_desc: "أدخل رقم التذكرة (Ticket ID) لعرض التفاصيل والجدول الزمني لجهازك.",
+                btn_track: "تتبع", new_repair_title: "وظيفة تصليح جديدة",
+                sec_customer: "معلومات الزبون", lbl_name: "الاسم الكامل *", lbl_phone: "رقم الهاتف *", lbl_address: "العنوان",
+                sec_device: "تفاصيل الجهاز", lbl_mobile: "اسم الموبايل *", lbl_color: "اللون *", lbl_items: "مرفقات مع الهاتف", lbl_items_desc: "كفر، شريحة، رام، الخ.",
+                sec_cost: "التصليح والتكلفة", lbl_type: "نوع التصليح *", opt_hw: "هاردوير (Hardware)", opt_sw: "سوفتوير (Software)", opt_both: "هاردوير وسوفتوير",
+                lbl_amount: "مبلغ التكلفة", lbl_curr: "العملة", lbl_cost_desc: "أجور ماذا هذه التكلفة؟", lbl_notes: "ملاحظات إضافية",
+                btn_create: "إنشاء تذكرة", list_title: "المهام الحالية",
+                th_ticket: "التذكرة", th_customer: "الزبون", th_device: "الجهاز والتكلفة", th_status: "تحديث الحالة (واتساب)", th_action: "حذف",
+                empty_title: "لا توجد أجهزة حالياً",
+                
+                s_create: "تم استلام الجهاز", s_check: "قيد الفحص", s_price: "بانتظار التسعير", s_prog: "قيد التصليح", s_fin: "اكتمل التصليح (جاهز)", s_rec: "تم التسليم للزبون",
+                
+                wa_msg: "مرحباً {name}، حالة جهازك ({device}) الآن هي: *{status}*.\n\nاضغط على الرابط أدناه لمتابعة التفاصيل والفاتورة:\n{link}",
+                
+                lbl_timeline: "الجدول الزمني للتصليح", lbl_invoice: "الفاتورة والتكلفة", lbl_total: "التكلفة الإجمالية", lbl_for: "أجور خدمة:", not_found: "لم يتم العثور على التذكرة"
+            },
+            ku: {
+                brand: "عمران <span class='text-primary'>چێکرن</span>",
+                tab_track: "دیڤچوونا ئامێری", tab_staff: "داشبۆردێ کارمەندان",
+                check_status_title: "پشکنینا رەوشا ئامێری", check_status_desc: "کودێ تیکتێ بنڤێسە بۆ دیتنا پێزانینان و دەمێ ئامێری.",
+                btn_track: "پشکنین", new_repair_title: "کارەکێ نوی",
+                sec_customer: "پێزانینێن کڕیاری", lbl_name: "ناڤێ دروست *", lbl_phone: "ژمارا تەلەفۆنێ *", lbl_address: "ناڤونیشان",
+                sec_device: "پێزانینێن ئامێری", lbl_mobile: "ناڤێ ئامێری *", lbl_color: "ڕەنگ *", lbl_items: "کەلوپەلێن دگەل", lbl_items_desc: "کەڤەر، سیمکارت، میموری...",
+                sec_cost: "چێکرن و بها", lbl_type: "جۆرێ چێکرنێ *", opt_hw: "هاردوێر (Hardware)", opt_sw: "سوفتوێر (Software)", opt_both: "هەردوو پێکڤە",
+                lbl_amount: "بها", lbl_curr: "دراڤ", lbl_cost_desc: "ئەڤ بهایە بۆ چییە؟", lbl_notes: "تێبینی",
+                btn_create: "دروستکرنا تیکتێ", list_title: "ئامێرێن نوکە",
+                th_ticket: "تیکت", th_customer: "کڕیار", th_device: "ئامێر و بها", th_status: "گوهۆرینا رەوشی (واتساب)", th_action: "ژێبرن",
+                empty_title: "چ ئامێر نینن",
+                
+                s_create: "وەرگرتنا ئامێری", s_check: "لژێر پشکنینێ", s_price: "لژێر دیارکرنا بهای", s_prog: "لژێر چێکرنێ", s_fin: "دوماهی هات (ئامادەیە)", s_rec: "رادەستکر",
+                
+                wa_msg: "سلاڤ {name}، رەوشا ئامێرێ تە ({device}) نوکە: *{status}*.\n\nکلیک ل سەر ڤی لینکی بکە بۆ دیتنا پسولە و دەمێ ئامێری:\n{link}",
+                
+                lbl_timeline: "دەمێ چێکرنێ", lbl_invoice: "بها و پسولە", lbl_total: "کۆما بهای", lbl_for: "بۆ خزمەتا:", not_found: "تیکت نەهاتە دیتن"
+            }
+        };
+
+        // System state
+        let currentLang = 'en';
+        const STORAGE_KEY = 'omran_pro_repair_data';
+        let repairs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+        // UI Elements
+        const viewCustomer = document.getElementById('view-customer');
+        const viewAdmin = document.getElementById('view-admin');
+        const tabCustomer = document.getElementById('tab-customer');
+        const tabAdmin = document.getElementById('tab-admin');
+        const adminRepairList = document.getElementById('admin-repair-list');
+        const searchResult = document.getElementById('search-result');
+
+        // Status List configuration
+        const statusKeys = ['s_create', 's_check', 's_price', 's_prog', 's_fin', 's_rec'];
+
+        // URL Checking on Load (Auto-fill tracking if link clicked from WhatsApp)
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ticketFromUrl = urlParams.get('ticket');
+            
+            if(ticketFromUrl) {
+                switchTab('customer');
+                document.getElementById('search-ticket').value = ticketFromUrl;
+                // Add slight delay to ensure translation is loaded
+                setTimeout(() => {
+                    document.getElementById('search-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }, 100);
+            }
+        });
+
+        // Apply Language
+        function changeLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.setAttribute('dir', lang === 'en' ? 'ltr' : 'rtl');
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(translations[lang][key]) el.innerHTML = translations[lang][key];
+            });
+
+            // Update dynamically generated parts
+            if(!viewAdmin.classList.contains('hidden')) renderAdminList();
+            
+            // Re-translate search result if visible
+            if(!searchResult.classList.contains('hidden')) {
+                document.getElementById('search-form').dispatchEvent(new Event('submit'));
+            }
+        }
+
+        function t(key) {
+            return translations[currentLang][key] || key;
+        }
+
+        // Init
+        changeLanguage('en');
+        lucide.createIcons();
+
+        // Tabs
+        function switchTab(tab) {
+            if (tab === 'customer') {
+                viewCustomer.classList.remove('hidden'); viewAdmin.classList.add('hidden');
+                tabCustomer.classList.add('tab-active'); tabAdmin.classList.remove('tab-active');
+                searchResult.classList.add('hidden');
+                document.getElementById('search-ticket').value = '';
+                // Clear URL parameters
+                window.history.pushState({}, document.title, window.location.pathname);
+            } else {
+                viewCustomer.classList.add('hidden'); viewAdmin.classList.remove('hidden');
+                tabCustomer.classList.remove('tab-active'); tabAdmin.classList.add('tab-active');
+                renderAdminList();
+            }
+        }
+
+        function generateTicketID() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+            return result;
+        }
+
+        // WhatsApp Link Generator
+        function sendWhatsApp(phone, name, device, statusKey, id) {
+            // Format phone
+            let formattedPhone = phone.trim();
+            if(formattedPhone.startsWith('0')) {
+                formattedPhone = '+964' + formattedPhone.substring(1);
+            } else if (!formattedPhone.startsWith('+')) {
+                formattedPhone = '+964' + formattedPhone; 
+            }
+            formattedPhone = formattedPhone.replace(/\D/g, ''); 
+            
+            const statusText = translations[currentLang][statusKey] || statusKey;
+            const fullLink = WEBSITE_URL + id;
+            
+            let message = translations[currentLang].wa_msg
+                .replace('{name}', name)
+                .replace('{device}', device)
+                .replace('{status}', statusText)
+                .replace('{link}', fullLink);
+
+            const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+            
+            // Open in new tab
+            window.open(url, '_blank');
+            showToast(`WhatsApp opened for ${name}`);
+        }
+
+        // Form Submit
+        document.getElementById('add-repair-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const newRepair = {
+                id: generateTicketID(),
+                name: document.getElementById('inp-name').value,
+                phone: document.getElementById('inp-phone').value,
+                address: document.getElementById('inp-address').value || '-',
+                device: document.getElementById('inp-device').value,
+                color: document.getElementById('inp-color').value,
+                items: document.getElementById('inp-items').value || '-',
+                type: document.getElementById('inp-type').value, 
+                costAmount: document.getElementById('inp-cost').value || '0',
+                costCurrency: document.getElementById('inp-currency').value,
+                costDetails: document.getElementById('inp-cost-details').value || '-',
+                notes: document.getElementById('inp-notes').value || '-',
+                
+                // History Array (Holds all status changes with time)
+                history: [
+                    { statusKey: 's_create', timestamp: dateStr }
+                ]
+            };
+
+            repairs.unshift(newRepair);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(repairs));
+            
+            this.reset();
+            renderAdminList();
+            
+            // Automatically trigger WhatsApp for creation
+            sendWhatsApp(newRepair.phone, newRepair.name, newRepair.device, 's_create', newRepair.id);
+        });
+
+        function deleteRepair(id) {
+            if(confirm('Delete ticket?')) {
+                repairs = repairs.filter(r => r.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(repairs));
+                renderAdminList();
+            }
+        }
+
+        function updateStatus(id, newStatusKey) {
+            const repair = repairs.find(r => r.id === id);
+            if (repair) {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const currentStatus = repair.history[repair.history.length-1].statusKey;
+                if(currentStatus === newStatusKey) return;
+
+                repair.history.push({ statusKey: newStatusKey, timestamp: dateStr });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(repairs));
+                
+                renderAdminList();
+                // Automatically send WhatsApp Update
+                sendWhatsApp(repair.phone, repair.name, repair.device, newStatusKey, repair.id);
+            }
+        }
+
+        function formatCurrency(amount, currency) {
+            if(amount === '0' || !amount) return t('s_price'); 
+            const num = Number(amount).toLocaleString();
+            return currency === 'USD' ? `$${num}` : `${num} IQD`;
+        }
+
+        function renderAdminList() {
+            adminRepairList.innerHTML = '';
+            document.getElementById('total-jobs').innerText = repairs.length;
+
+            if (repairs.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                adminRepairList.parentElement.classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('empty-state').classList.add('hidden');
+            adminRepairList.parentElement.classList.remove('hidden');
+
+            repairs.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/50 transition-colors bg-white border-b border-gray-100';
+                
+                const currentStatus = r.history[r.history.length-1].statusKey;
+                const costDisplay = formatCurrency(r.costAmount, r.costCurrency);
+                const startDate = r.history[0].timestamp.split(' ')[0]; 
+
+                let optionsHtml = '';
+                statusKeys.forEach(key => {
+                    const selected = currentStatus === key ? 'selected' : '';
+                    optionsHtml += `<option value="${key}" ${selected}>${t(key)}</option>`;
+                });
+
+                let ddClass = "text-sm border rounded-lg bg-white px-3 py-2 outline-none focus:ring-2 font-bold w-full max-w-[200px] ";
+                if(currentStatus === 's_fin') ddClass += "text-green-600 border-green-300 bg-green-50";
+                else if(currentStatus === 's_rec') ddClass += "text-gray-500 border-gray-300 bg-gray-100";
+                else if(currentStatus === 's_prog') ddClass += "text-blue-600 border-blue-300 bg-blue-50";
+                else ddClass += "text-yellow-600 border-yellow-300 bg-yellow-50";
+
+                tr.innerHTML = `
+                    <td class="px-5 py-4 align-top">
+                        <div class="font-mono font-bold text-primary bg-blue-50 border border-blue-100 px-2 py-1 rounded w-max tracking-wider" style="direction:ltr">${r.id}</div>
+                        <div class="text-[11px] text-gray-400 mt-2 font-medium" style="direction:ltr">${startDate}</div>
+                    </td>
+                    <td class="px-5 py-4 align-top">
+                        <div class="font-bold text-dark text-sm">${r.name}</div>
+                        <div class="text-xs text-gray-500 mt-1" style="direction:ltr; text-align:${currentLang==='en'?'left':'right'}"><i data-lucide="phone" class="w-3 h-3 inline"></i> ${r.phone}</div>
+                    </td>
+                    <td class="px-5 py-4 align-top">
+                        <div class="font-bold text-dark text-sm">${r.device}</div>
+                        <div class="text-xs font-bold mt-2 ${r.costAmount === '0' ? 'text-yellow-600 bg-yellow-50 border-yellow-100' : 'text-green-600 bg-green-50 border-green-100'} px-2 py-1 rounded inline-block border">${costDisplay}</div>
+                    </td>
+                    <td class="px-5 py-4 align-top">
+                        <div class="flex items-center gap-2">
+                            <select onchange="updateStatus('${r.id}', this.value)" class="${ddClass}">
+                                ${optionsHtml}
+                            </select>
+                            <button onclick="sendWhatsApp('${r.phone}','${r.name}','${r.device}','${currentStatus}','${r.id}')" title="Resend WhatsApp" class="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition shadow-sm">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="px-5 py-4 align-top text-end">
+                        <button onclick="deleteRepair('${r.id}')" class="text-red-400 hover:text-red-600 p-2 bg-red-50 hover:bg-red-100 rounded-lg">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                adminRepairList.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Customer Search
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ticketInput = document.getElementById('search-ticket').value.trim().toUpperCase();
+            if (!ticketInput) return;
+
+            const r = repairs.find(x => x.id === ticketInput);
+            searchResult.classList.remove('hidden');
+
+            if (r) {
+                const currentStatusKey = r.history[r.history.length-1].statusKey;
+                const costDisplay = formatCurrency(r.costAmount, r.costCurrency);
+                
+                let timelineHtml = '';
+                [...r.history].reverse().forEach((histItem, index) => {
+                    const isLatest = index === 0;
+                    
+                    let icon = 'circle'; let color = 'text-gray-300'; let bg = 'bg-gray-100';
+                    if(histItem.statusKey === 's_create') { icon = 'file-plus'; color='text-blue-500'; bg='bg-blue-100'; }
+                    if(histItem.statusKey === 's_check') { icon = 'search'; color='text-purple-500'; bg='bg-purple-100'; }
+                    if(histItem.statusKey === 's_price') { icon = 'dollar-sign'; color='text-yellow-500'; bg='bg-yellow-100'; }
+                    if(histItem.statusKey === 's_prog') { icon = 'settings'; color='text-blue-600'; bg='bg-blue-100'; }
+                    if(histItem.statusKey === 's_fin') { icon = 'check-circle-2'; color='text-green-500'; bg='bg-green-100'; }
+                    if(histItem.statusKey === 's_rec') { icon = 'user-check'; color='text-gray-800'; bg='bg-gray-200'; }
+
+                    if(isLatest) bg += ' ring-4 ring-opacity-30 ring-' + color.split('-')[1] + '-500';
+
+                    timelineHtml += `
+                        <div class="timeline-item flex gap-4 w-full">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full ${bg} flex items-center justify-center z-10 relative">
+                                <i data-lucide="${icon}" class="w-4 h-4 ${color}"></i>
+                            </div>
+                            <div class="${isLatest ? 'opacity-100' : 'opacity-60'} pt-1 w-full">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                                    <h4 class="font-bold text-dark text-lg">${t(histItem.statusKey)}</h4>
+                                    <span class="text-xs text-gray-500 font-medium font-mono" style="direction:ltr">${histItem.timestamp}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                searchResult.innerHTML = `
+                    <div class="border border-gray-200 rounded-2xl p-6 sm:p-8 text-start fade-in bg-white shadow-lg">
+                        
+                        <!-- Header -->
+                        <div class="flex items-center gap-4 border-b border-gray-100 pb-6 mb-6">
+                            <div class="bg-primary/10 p-4 rounded-xl">
+                                <i data-lucide="smartphone" class="w-8 h-8 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark">${r.device} <span class="text-sm font-normal text-gray-500">(${r.color})</span></h3>
+                                <p class="text-gray-500 mt-1 font-mono tracking-widest text-sm" style="direction:ltr">${r.id}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            
+                            <!-- Timeline Column -->
+                            <div>
+                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-6 bg-blue-50 w-max px-3 py-1 rounded-full">${t('lbl_timeline')}</h4>
+                                <div class="pl-2 rtl:pl-0 rtl:pr-2">
+                                    ${timelineHtml}
+                                </div>
+                            </div>
+
+                            <!-- Invoice & Details Column -->
+                            <div class="space-y-6">
+                                <!-- Invoice -->
+                                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 border-b pb-2">${t('lbl_invoice')}</h4>
+                                    <div class="flex justify-between items-center mb-4">
+                                        <span class="text-sm font-medium text-gray-600">${t('lbl_total')}</span>
+                                        <span class="text-2xl font-black text-green-600 bg-green-100 px-3 py-1 rounded-lg" style="direction:ltr">${costDisplay}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs text-gray-400 block mb-1">${t('lbl_for')}</span>
+                                        <p class="text-sm font-bold text-dark">${r.costDetails}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Meta Info -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                                        <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1 text-center">${t('sec_customer')}</span>
+                                        <p class="text-sm font-bold text-dark text-center">${r.name}</p>
+                                    </div>
+                                    <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                                        <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1 text-center">${t('lbl_items')}</span>
+                                        <p class="text-sm font-bold text-dark text-center">${r.items}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Notes -->
+                                ${r.notes && r.notes !== '-' ? `
+                                <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                                    <span class="text-[10px] text-yellow-600 uppercase font-bold tracking-wider block mb-1">${t('lbl_notes')}</span>
+                                    <p class="text-sm text-yellow-800">${r.notes}</p>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                searchResult.innerHTML = `
+                    <div class="border border-red-200 bg-red-50 rounded-2xl p-8 text-center fade-in">
+                        <i data-lucide="shield-alert" class="w-12 h-12 text-red-500 mx-auto mb-3"></i>
+                        <h3 class="text-xl font-bold text-red-800">${t('not_found')}</h3>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+    </script>
+</body>
+</html>
